@@ -19,14 +19,14 @@ import com.twitter.util.{Future, Var}
  */
 
 trait Messanger {
-  def receive[T](name: String, future: => Future[T]): Future[T]
+  def receive[T](name: String, future: => Future[T])(
+      implicit monitor: Monitor): Future[T]
 }
 
 object Messenger extends Messanger {
 
-  private lazy val monitor: Monitor = Monitor
-
-  def receive[T](name: String, future: => Future[T]): Future[T] = {
+  def receive[T](name: String, future: => Future[T])(
+      implicit monitor: Monitor): Future[T] = {
     val stateCell = Var(sendTask(name))
     future onSuccess { _ =>
       sendSuccess(stateCell)
@@ -35,20 +35,21 @@ object Messenger extends Messanger {
     }
   }
 
-  private def sendTask(name: String): TaskState = {
+  private def sendTask(name: String)(implicit monitor: Monitor): TaskState = {
     val state = TaskState(name = name, status = Start)
     monitor.send(state)
     state
   }
 
-  private def sendSuccess(state: Var[TaskState]): Var[TaskState] = {
+  private def sendSuccess(state: Var[TaskState])(
+      implicit monitor: Monitor): Var[TaskState] = {
     val stateCell = state.map(_.copy(status = Success))
     monitor.send(stateCell.sample())
     stateCell
   }
 
-  private def sendFailure(err: Throwable,
-                          state: Var[TaskState]): Var[TaskState] = {
+  private def sendFailure(err: Throwable, state: Var[TaskState])(
+      implicit monitor: Monitor): Var[TaskState] = {
     val stateCell = state.map(_.copy(status = Error(err)))
     monitor.send(stateCell.sample())
     stateCell
