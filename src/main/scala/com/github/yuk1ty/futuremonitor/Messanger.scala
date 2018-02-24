@@ -1,5 +1,6 @@
 package com.github.yuk1ty.futuremonitor
 
+import com.github.yuk1ty.futuremonitor.Messenger.{sendFailure, sendSuccess, sendTask}
 import com.twitter.util.{Future, Var}
 
 /*
@@ -20,12 +21,6 @@ import com.twitter.util.{Future, Var}
 
 trait Messanger {
   def receive[T](name: String)(future: => Future[T])(
-      implicit monitor: Monitor): Future[T]
-}
-
-object Messenger extends Messanger {
-
-  def receive[T](name: String)(future: => Future[T])(
       implicit monitor: Monitor): Future[T] = {
     val stateCell = Var(sendTask(name))
     future onSuccess { _ =>
@@ -42,19 +37,21 @@ object Messenger extends Messanger {
   }
 
   private def sendSuccess(state: Var[TaskState])(
-      implicit monitor: Monitor): Var[TaskState] = {
+    implicit monitor: Monitor): Var[TaskState] = {
     val stateCell = state.map(_.copy(status = Success))
     monitor.send(stateCell.sample())
     stateCell
   }
 
   private def sendFailure(err: Throwable, state: Var[TaskState])(
-      implicit monitor: Monitor): Var[TaskState] = {
+    implicit monitor: Monitor): Var[TaskState] = {
     val stateCell = state.map(_.copy(status = Error(err)))
     monitor.send(stateCell.sample())
     stateCell
   }
 }
+
+object Messenger extends Messanger
 
 case class TaskState(name: String, status: TaskStatus)
 

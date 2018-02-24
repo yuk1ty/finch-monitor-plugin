@@ -29,7 +29,7 @@ trait Monitor {
 
 object Monitor extends Monitor {
 
-  private lazy val monitor = new ConcurrentHashMap[String, TaskStatus]()
+  private[this] lazy val monitor = new ConcurrentHashMap[String, TaskStatus]()
 
   override def send(state: TaskState): Unit = {
     state.status match {
