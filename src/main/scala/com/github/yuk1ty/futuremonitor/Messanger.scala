@@ -19,13 +19,13 @@ import com.twitter.util.{Future, Var}
  */
 
 trait Messanger {
-  def receive[T](name: String, future: => Future[T])(
+  def receive[T](name: String)(future: => Future[T])(
       implicit monitor: Monitor): Future[T]
 }
 
 object Messenger extends Messanger {
 
-  def receive[T](name: String, future: => Future[T])(
+  def receive[T](name: String)(future: => Future[T])(
       implicit monitor: Monitor): Future[T] = {
     val stateCell = Var(sendTask(name))
     future onSuccess { _ =>
